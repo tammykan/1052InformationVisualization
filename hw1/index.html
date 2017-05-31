@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 12px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: orange;
+}
+
+.bar:hover {
+  fill: orangered ;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+</style>
+
+<head>
+  <title>HW1-BarChart</title>
+</head>
+
+<body>
+  <h3>Information Visualization Homework1 (105753026 資科碩一 甘岱珺)</h3>
+
+<h2><span style='font-size:14pt'><b>106年1月份 臺北大眾捷運市政府站旅運量統計圖 (2017/01)</b></span></h2>
+<h3>說明：</h3>
+<p>此圖表所使用的資料是臺北大眾捷運公司提供的各站進出口人次統計，其中針對 106 年 1 月捷運市政府站進出站總人次進
+行資料視覺化分析。呈現方式是靜態長條圖，縱軸是旅運量人次、橫軸是一月份所有日期 (01/01 - 01/31)，並且依據顏色深度表現資料量大小，以及動態顯示一月份每日旅運量實際人數。</p>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script>
+
+var margin = {top: 40, right: 20, bottom: 30, left: 60},
+width = 960 - margin.left - margin.right,
+height = 500 - margin.top - margin.bottom;
+
+var x = d3.scale.ordinal()
+.rangeRoundBands([0, width], .1);
+
+var y = d3.scale.linear()
+.range([height, 0]);
+
+var xAxis = d3.svg.axis()
+.scale(x)
+.orient("bottom");
+
+var yAxis = d3.svg.axis()
+.scale(y)
+.orient("left");
+
+var tip = d3.tip()
+.attr('class', 'd3-tip')
+.offset([-10, 0])
+.html(function(d) {
+  return "<strong>人數: </strong> <span style='color:red'>" + d.number + "</span>";
+})
+
+
+var svg = d3.select("body").append("svg")
+.attr("width", width + margin.left + margin.right)
+.attr("height", height + margin.top + margin.bottom)
+.append("g")
+.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.call(tip);
+
+d3.tsv("data.tsv", type, function(error, data) {
+  x.domain(data.map(function(d) { return d.date; }));
+  y.domain([0, d3.max(data, function(d) { return d.number; })]);
+
+  var color = d3.scale.linear()
+  .domain([0, d3.max(data, function(d) { return d.number; })])
+  .range(["lightskyblue", "navy"])
+
+  svg.append("g")
+  .attr("class", "x axis")
+  .attr("transform", "translate(0," + height + ")")
+  .call(xAxis)
+
+  .append("text")
+    //.attr("transform", "rotate(-90)")
+    .attr("y", 6)
+    .attr("dy", "1.71em")
+    .attr("text-anchor", "end")
+    .attr("fill", "black")
+    .style("font-weight", "bold")
+    .text("日期");
+
+    svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 6)
+    .attr("dy", "1.71em")
+    .style("text-anchor", "end")
+    .attr("fill", "black")
+    .style("font-weight", "bold")
+    .text("人次");
+
+    svg.selectAll(".bar")
+    .data(data)
+    .enter().append("rect")
+    .attr("class", "bar")
+    .attr("x", function(d) { return x(d.date); })
+    .attr("width", x.rangeBand())
+    .attr("y", function(d) { return y(d.number); })
+    .attr("height", function(d) { return height - y(d.number); })
+    .style("fill", function(d) { return color(d.number); })
+    .on('mouseover', tip.show)
+    .on('mouseout', tip.hide)
+
+  });
+
+function type(d) {
+  d.number = +d.number;
+  return d;
+}
+
+</script>
+
+<h4><a href="http://www.metro.taipei/ct.asp?xItem=1058535&CtNode=70073&mp=122035">資料來源：臺北大眾捷運股份有限公司－旅運量統計</a></h4>
+
+</body>
+
+
+</html>
