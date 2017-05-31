@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<style>
+
+	body {
+		font: 12px sans-serif;
+	}
+
+	.rectangle {
+		fill: steelblue;
+	}
+	.rectangle:hover {
+		fill: orange;
+	}
+	.axis {
+		font: 12px sans-serif;
+	}
+
+	.axis path,
+	.axis line {
+		fill: none;
+		stroke: #000;
+		shape-rendering: crispEdges;
+	}
+
+	.bar {
+		fill: orange;
+	}
+
+	.bar:hover {
+		fill: orangered;
+	}
+
+	.x.axis path {
+		display: none;
+	}
+
+	label {
+    position: right;
+    top: 40px;
+    right: 20px;
+  }
+  </style>
+
+  <title>HW2-BarChart</title>
+</head>
+
+<body>
+
+	<h3>Information Visualization Homework2 (105753026 資科碩一 甘岱珺)</h3>
+
+	<h2><span style='font-size:14pt'><b>106年1月份 臺北大眾捷運各站旅運量統計圖 (2017/01)</b></span></h2>
+	<h3>說明：</h3>
+	<p>此圖表所使用的資料是臺北大眾捷運公司提供的各站進出口人次統計，其中針對 106 年 1 月臺北捷運各站進出站總人次進行資料視覺化分析。呈現方式是動態長條圖，可以切換至各捷運站資料並且進行人數排序，縱軸是旅運量人次、橫軸是一月份所有日期 (01/01 - 01/31)，並且依據顏色深度表現資料量大小，以及動態顯示一月份每日旅運量實際人數。</p>
+
+		<br>
+
+		<div id="drop" align=left></div>
+		<label><input type="checkbox"> 旅運量排序</label>
+		
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script>
+
+		var margin = {top: 40, right: 20, bottom: 30, left: 80},
+		width = 960 - margin.left - margin.right,
+		height = 500 - margin.top - margin.bottom;
+
+		var svg = d3.select("body").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+//disable sort checkbox
+d3.select("label")             
+.select("input")
+  .property("disabled", false)
+  .property("checked", false); 
+
+  d3.tsv("data.tsv", function(error, data){
+
+	// filter year
+	var data = data.filter(function(d){return d.Year == '2017';});
+	// Get every column value
+	var elements = Object.keys(data[0])
+	.filter(function(d){
+		return ((d != "Year") & (d != "State"));
+	});
+	var selection = elements[0];
+
+	var y = d3.scale.linear()
+	.domain([0, d3.max(data, function(d){
+		return +d[selection];
+	})])
+	.range([height, 0]);
+
+	var x = d3.scale.ordinal()
+	.domain(data.map(function(d){ return d.State;}))
+	.rangeBands([0, width], .1);
+
+	var xAxis = d3.svg.axis()
+	.scale(x)
+	.orient("bottom");
+
+	var yAxis = d3.svg.axis()
+	.scale(y)
+	.orient("left");
+
+//color range
+
+var c20 = d3.scale.category20();
+
+  var color = d3.scale.linear()
+  .domain([0, d3.max(data, function(d) { return d[selection]; })])
+  .range(["lightblue", "navy"])
+
+
+  svg.append("g")
+  .attr("class", "x axis")
+  .attr("transform", "translate(0," + height + ")")
+  .call(xAxis)
+  .append("text")
+  .attr("y", 6)
+  .attr("dy", "1.71em")
+  .attr("text-anchor", "middle")
+  .attr("fill", "black")
+  .style("font-weight", "bold")
+  .text("日期");
+
+
+  svg.append("g")
+  .attr("class", "y axis")
+  .call(yAxis)
+  .append("text")
+  .attr("transform","rotate(-90)")
+  .attr("y", -80)
+  .attr("x", 0-(height/2))
+  .attr("dy","1.5em")
+  .style("text-anchor", "end")
+  .attr("fill", "black")
+  .style("font-weight", "bold")
+  .text("人次");
+
+  svg.append("g")
+  .append("text")
+  .attr("class","title")
+  .attr("x", (width / 2))             
+  .attr("y", -20)
+  .attr("text-anchor", "middle")
+  .style("font-size", "16px")
+  .style("text-decoration", "underline")
+  .style("font-weight", "bold")
+  .text("臺北大眾捷運旅運量統計圖 (2017/01)");
+
+
+  svg.selectAll("rectangle")
+  .data(data)
+  .enter()
+  .append("rect")
+  .attr("class","rectangle")
+  .attr("width", x.rangeBand())
+  .attr("height", function(d){
+   return height - y(+d[selection]);
+ })
+  .style("fill", function(d) { return color(d[selection]); })
+  .attr("x", function(d, i){
+   return (width / data.length) * i ;
+ })
+  .attr("y", function(d){
+   return y(+d[selection]);
+ })
+  .append("title")
+  .text(function(d){
+   return "人數：" + d[selection];
+ });
+
+      
+
+      var selector = d3.select("#drop")
+      .append("select")
+      .attr("id","dropdown")
+      .on("change", function(d){
+      	selection = document.getElementById("dropdown");
+
+      	y.domain([0, d3.max(data, function(d){
+      		return +d[selection.value];})]);
+
+      	yAxis.scale(y);
+
+      	d3.selectAll(".rectangle")
+      	.transition()
+
+      	.attr("height", function(d){
+      		return height - y(+d[selection.value]);
+      	})
+      	.attr("x", function(d, i){
+      		return (width / data.length) * i ;
+      	})
+      	.attr("y", function(d){
+      		return y(+d[selection.value]);
+      	})
+      	.ease("linear")
+      	.select("title")
+      	.text(function(d){
+      		return "人數：" + d[selection.value];
+      	});
+
+      	d3.selectAll("g.y.axis")
+      	.transition()
+      	.call(yAxis);
+
+      });
+
+
+      selector.selectAll("option")
+      .data(elements)
+      .enter().append("option")
+      .attr("value", function(d){
+      	return d;
+      })
+      .text(function(d){
+      	return d;
+      })
+
+
+      d3.selectAll("input").on("change", change);
+
+      var sortTimeout = setTimeout(function() {
+        d3.select("input").property("checked", true).each(change);
+      }, 2000);
+
+      function change() {
+        clearTimeout(sortTimeout);
+        selection = document.getElementById("dropdown");
+
+        var x0 = x.domain(data.sort(this.checked
+          ? function(a, b) { return b[selection.value] - a[selection.value]; }
+          : function(a, b) { return a.State - b.State; })
+        .map(function(d) { return d.State; }))
+        .copy();
+
+        svg.selectAll(".rectangle")
+        .sort(function(a, b) { return x0(a.State) - x0(b.State); });
+
+        var transition = svg.transition().duration(750),
+        delay = function(d, i) { return i * 50; };
+
+        transition.selectAll(".rectangle")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.State); });
+
+        transition.select(".x.axis")
+        .call(xAxis)
+        .selectAll("g")
+        .delay(delay);
+      }
+
+});
+
+
+</script>
+
+<h4><a href="http://www.metro.taipei/ct.asp?xItem=1058535&CtNode=70073&mp=122035">資料來源：臺北大眾捷運股份有限公司－旅運量統計</a></h4>
+
+</body>
